@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABC Supermarkets - Checkout</title>
+    <link rel="stylesheet" href="loginregisterstyles.css">
+</head>
+<body>
+    <main class="main-content">
+        <form id="paymentForm">
+            <table>
+                <tr>
+                    <th colspan="2">Checkout</th>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding-bottom: 20px;">
+                        <h3 style="text-align: center; margin-bottom: 15px; color: #333; font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 10px;">Order Summary</h3>
+                        <div class="summary-line">
+                            <span>Subtotal:</span>
+                            <span id="checkoutSubtotal">AED 0.00</span>
+                        </div>
+                        <div class="summary-line">
+                            <span>Shipping:</span>
+                            <span>Free</span>
+                        </div>
+                        <div class="total-line">
+                            <span>Grand Total:</span>
+                            <span id="checkoutGrandTotal">AED 0.00</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th colspan="2">Payment Information</th>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <label for="cardNumber">Card Number</label>
+                        <input class="entry" type="text" id="cardNumber" placeholder="•••• •••• •••• ••••" required maxlength="19">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-right: 10px;">
+                        <label for="expiryDate">Expiry (MM/YY)</label>
+                        <input class="entry" type="text" id="expiryDate" placeholder="MM/YY" required maxlength="5">
+                    </td>
+                    <td style="padding-left: 10px;">
+                        <label for="cvv">CVV</label>
+                        <input class="entry" type="text" id="cvv" placeholder="•••" required maxlength="4">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <label for="cardName">Name on Card</label>
+                        <input class="entry" type="text" id="cardName" placeholder="Full Name" required>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div id="paymentMessage"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <button type="submit" class="login-box">Confirm Order</button>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </main>
+
+    <script src="products.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkoutSubtotalSpan = document.getElementById('checkoutSubtotal');
+            const checkoutGrandTotalSpan = document.getElementById('checkoutGrandTotal');
+            const paymentForm = document.getElementById('paymentForm');
+            // Corrected: Ensure paymentMessageDiv is correctly acquired
+            const paymentMessageDiv = document.getElementById('paymentMessage');
+
+            // Helper function to get cart data from localStorage
+            function getCart() {
+                const cartData = localStorage.getItem('cart');
+                return cartData ? JSON.parse(cartData) : [];
+            }
+
+            // Helper function to save cart data to localStorage
+            function saveCart(updatedCart) {
+                localStorage.setItem('cart', JSON.stringify(updatedCart));
+            }
+
+            // Helper function to find product details by ID from the global 'products' array
+            function findProductById(productId) {
+                // Ensure products array is loaded from products.js
+                return typeof products !== 'undefined' ? products.find(p => p.id === productId) : null;
+            }
+
+            // Function to calculate and return total cart values
+            function calculateTotals() {
+                const cart = getCart();
+                let subtotal = 0;
+                // No need for totalItems here as it's not displayed on checkout
+
+                cart.forEach(item => {
+                    const product = findProductById(item.productId);
+                    if (product) {
+                        subtotal += product.price * item.quantity;
+                    }
+                });
+                return { subtotal };
+            }
+
+            // Function to display the calculated totals on the page
+            function displayTotals() {
+                const { subtotal } = calculateTotals();
+                checkoutSubtotalSpan.textContent = `AED ${subtotal.toFixed(2)}`;
+                checkoutGrandTotalSpan.textContent = `AED ${subtotal.toFixed(2)}`; // Assuming free shipping
+            }
+
+            // Function to clear all payment input fields
+            function clearPaymentInputs() {
+                document.getElementById('cardNumber').value = '';
+                document.getElementById('expiryDate').value = '';
+                document.getElementById('cvv').value = '';
+                document.getElementById('cardName').value = '';
+            }
+
+            // Function to show a message in the payment message box
+            function showMessage(message, isSuccess = false) {
+                // Check if paymentMessageDiv exists before attempting to set properties
+                if (paymentMessageDiv) {
+                    paymentMessageDiv.textContent = message;
+                    paymentMessageDiv.style.display = 'block'; // Make the message box visible
+                    if (isSuccess) {
+                        paymentMessageDiv.className = 'success';
+                    } else {
+                        paymentMessageDiv.className = ''; // Clear success class on error
+                    }
+                } 
+            }
+
+            // Initial display of totals when the page loads
+            displayTotals();
+
+            // Handle form submission
+            if (paymentForm) {
+                paymentForm.addEventListener('submit', (event) => {
+                    event.preventDefault(); // Prevent default form submission
+
+                    // Clear previous messages
+                    showMessage('');
+                    if (paymentMessageDiv) paymentMessageDiv.style.display = 'none';
+
+                    const cart = getCart();
+                    if (cart.length === 0) {
+                        showMessage('Your cart is empty. Please add items before placing an order.', false);
+                        return;
+                    }
+
+                    // Get input values
+                    const cardNumber = document.getElementById('cardNumber').value.trim();
+                    const expiryDate = document.getElementById('expiryDate').value.trim();
+                    const cvv = document.getElementById('cvv').value.trim();
+                    const cardName = document.getElementById('cardName').value.trim();
+
+                    // Simple validation for required fields
+                    if (!cardNumber || !expiryDate || !cvv || !cardName) {
+                        showMessage('Please fill in all payment details.', false);
+                        return;
+                    }
+
+                    // Basic format validation for Card Number (13-19 digits, allowing spaces)
+                    // The maxlength="19" already helps, but this adds a regex check
+                    if (!/^[0-9]{4} ?[0-9]{4} ?[0-9]{4} ?[0-9]{1,4}$/.test(cardNumber.replace(/\s/g, ''))) {
+                         showMessage('Invalid card number format.', false);
+                         return;
+                    }
+
+                    // Basic format validation for Expiry Date (MM/YY)
+                    const expiryRegex = /^(0[1-9]|1[0-2])\/?([0-9]{2})$/;
+                    if (!expiryRegex.test(expiryDate)) {
+                        showMessage('Invalid expiry date format. Use MM/YY.', false);
+                        return;
+                    }
+
+                    // Basic validation for CVV (3 or 4 digits)
+                    if (!/^[0-9]{3,4}$/.test(cvv)) {
+                         showMessage('Invalid CVV format.', false);
+                         return;
+                    }
+
+                    // 1. Clear the cart
+                    saveCart([]);
+
+                    // 2. Clear totals on display
+                    checkoutSubtotalSpan.textContent = 'AED 0.00';
+                    checkoutGrandTotalSpan.textContent = 'AED 0.00';
+
+                    // 3. Clear payment input fields
+                    clearPaymentInputs();
+
+                    // 4. Show success message
+                    showMessage('Order placed successfully!', true);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

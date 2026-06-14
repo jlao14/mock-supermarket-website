@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABC Supermarkets - Fresh Products Daily</title>
+    <link rel="stylesheet" href="mainstyles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="top-bar">
+            <div class="logo-section">
+                <div><img src="ABC Supermarket Logo.png" alt="ABC Supermarkets Logo" class="logo-circle"></div>
+                <div class="logo-text">
+                    <h1>ABC Supermarket</h1>
+                    <p>Quality Guaranteed</p>
+                </div>
+            </div>
+            <div class="user_actions">
+                <a href="loginpage.html">Login</a>
+                <a href="registerpage.html">Register</a>
+                <a href="cartpage.html" class="cart">Cart</a>
+            </div>
+        </div>
+        <nav class="main-nav">
+            <ul class="nav-links">
+                <li><a href="homepage.html">Home</a></li>
+                <li><a href="freshproduce.html">Fresh Produce</a></li>
+                <li><a href="meatpoultry.html">Meat and Poultry</a></li>
+                <li><a href="householditems.html">Cleaning and Household</a></li>
+                <li><a href="personalcare.html">Beauty and Personal Care</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!--
+        Main content describing the product and showing an image as well, it is assigned with the data-product-id 
+        which is an attribute that will help the javascript code find this product wihtin the products.js
+    -->
+    <main class="main-content">
+        <section class="product-section" data-product-id="apple">
+            <div class="product-image-gallery">
+                <img src="Fresh Produce/apples.png" alt="Fresh Apples Main" class="main-product-image">
+            </div>
+            <div class="product-info">
+                <h2 class="product-name">Fresh Apples</h2>
+                <div class="product-price-section">
+                    <span class="current-price">AED 8.99</span>
+                    <span class="unit-info">(Price per kilogram)</span>
+                </div>
+                <p class="product-description">
+                    Our fresh Granny Smith apples are crisp, tart, and bursting with flavor. Perfect for snacking, baking, or adding a healthy crunch to your salads. 
+                    Sourced directly from local farms, ensuring peak freshness and quality.
+                </p>
+                <div class="product-actions">
+                    <button class="add-to-cart" id="addToCartBtn">Add to Cart</button>
+                    <button class="buy-now" id="buyNowBtn">Buy Now</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h2>ABC Supermarkets</h2>
+                <p>Here at ABC Supermarkets we guarantee quality and freshness in every product at a price you can afford.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="homepage.html">Home</a></li>
+                    <li><a href="loginpage.html">Login</a></li>
+                    <li><a href="registerpage.html">Register</a></li>
+                    <li><a href="cartpage.html">Cart</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Customer Service</h3>
+                <ul>
+                    <li><p>Need Help?</p></li>
+                    <li><p>Ask us a question!</p></li>
+                    <li><a onclick="askQuery()">Click Here</a></li>
+                    <script>
+                        function askQuery() {
+                            const question = prompt("Please enter your query:");
+                            if (question) {
+                                alert("Thank you for your query! We will get back to you soon.");
+                            } else {
+                                alert("No query entered.");
+                            }
+                        }
+                    </script>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contact Info</h3>
+                <address>
+                    <p>Dubai, United Arab Emirates</p>
+                    <a href="tel:+042124623">04 212 4623</a><br>
+                    <a href="mailto:contactus@abcsupermarkets.com">contactus@abcsupermarkets.com</a>
+                </address>
+                <p>Everyday 7:00 AM - 10:00 PM</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="products.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addToCartBtn = document.getElementById('addToCartBtn');
+            const buyNowBtn = document.getElementById('buyNowBtn');
+            
+            // Get the product ID from the data-product-id attribute of the product section
+            const productSection = document.querySelector('.product-section');
+            const productId = productSection ? productSection.dataset.productId : null;
+
+            let currentProduct = null;
+
+            if (productId) {
+                // Find the product data from the products list
+                currentProduct = products.find(p => p.id === productId);
+            }
+            // Checking if the product mentioned exists within the list, if it does not then buttons are disabled
+            if (!currentProduct) {
+                console.error(`Product data not found in products.js for ID: ${productId}. Please ensure it exists.`);
+                if (addToCartBtn) addToCartBtn.disabled = true;
+                if (buyNowBtn) buyNowBtn.disabled = true;
+                alert('Product data missing. Cannot add to cart or buy now.');
+                return;
+            }
+
+            function getCart() {
+                const cart = localStorage.getItem('cart');
+                return cart ? JSON.parse(cart) : [];
+            }
+
+            function saveCart(cart) {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+
+            function addToCart(productId, quantity = 1) {
+                let cart = getCart();
+                const existingItemIndex = cart.findIndex(item => item.productId === productId);
+
+                if (existingItemIndex > -1) {
+                    cart[existingItemIndex].quantity += quantity;
+                } else {
+                    cart.push({ productId, quantity });
+                }
+                saveCart(cart);
+            }
+
+            // Event listener for "Add to Cart" button
+            if (addToCartBtn) {
+                addToCartBtn.addEventListener('click', () => {
+                    addToCart(currentProduct.id);
+                    alert(`${currentProduct.name} added to cart!`);
+                });
+            }
+
+            // Event listener for "Buy Now" button, buy now button works by adding the product to cart first then proceeding immediately to checkout page
+            if (buyNowBtn) {
+                buyNowBtn.addEventListener('click', () => {
+                    addToCart(currentProduct.id); 
+                    window.location.href = 'checkoutpage.html'; 
+                });
+            }
+        });
+    </script>
+</body>
+</html>
